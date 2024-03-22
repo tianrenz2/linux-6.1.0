@@ -42,7 +42,7 @@ typedef struct kvm_ivshmem_device {
 	unsigned int reg_size;
 
 	unsigned int ioaddr;
-	unsigned int ioaddr_size;
+	unsigned long ioaddr_size;
 	unsigned int irq;
 
 	struct pci_dev *dev;
@@ -283,12 +283,12 @@ static int kvm_ivshmem_probe_device (struct pci_dev *pdev,
 							(unsigned long) kvm_ivshmem_dev.base_addr);
 
 	if (!kvm_ivshmem_dev.base_addr) {
-		printk(KERN_ERR "KVM_IVSHMEM: cannot iomap region of size %d\n",
+		printk(KERN_ERR "KVM_IVSHMEM: cannot iomap region of size %lu\n",
 							kvm_ivshmem_dev.ioaddr_size);
 		goto pci_release;
 	}
 
-	printk(KERN_INFO "KVM_IVSHMEM: ioaddr = %x ioaddr_size = %d\n",
+	printk(KERN_INFO "KVM_IVSHMEM: ioaddr = %x ioaddr_size = %lu\n",
 						kvm_ivshmem_dev.ioaddr, kvm_ivshmem_dev.ioaddr_size);
 
 	kvm_ivshmem_dev.regaddr =  pci_resource_start(pdev, 0);
@@ -501,16 +501,18 @@ static void rr_init_queue(void)
     };
     rr_event_log_guest *event;
 	int i;
+	unsigned long size;
 
     event = kmalloc(sizeof(rr_event_log_guest), GFP_KERNEL);
     event->type = 4;
 
 	header.current_pos = 0;
-    header.total_pos = (kvm_ivshmem_dev.ioaddr_size - header.header_size) / header.entry_size;
+	size = kvm_ivshmem_dev.ioaddr_size - header.header_size;
+    header.total_pos = size / header.entry_size;
 
     printk(KERN_INFO "Initialized RR shared memory, "
-          "header size=%d, current pos=%d, total_pos=%d\n", 
-          header.header_size, header.current_pos, header.total_pos);
+          "total size=%lu header size=%d, current pos=%d, total_pos=%d\n", 
+          size, header.header_size, header.current_pos, header.total_pos);
 
     memcpy(kvm_ivshmem_dev.base_addr, &header, sizeof(rr_event_guest_queue_header));
 
