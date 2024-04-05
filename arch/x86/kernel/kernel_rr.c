@@ -5,7 +5,8 @@
 __visible noinstr void rr_record_syscall(struct pt_regs *regs)
 {
     unsigned long flags;
-    rr_event_log_guest *event;
+    void *event = NULL;
+    rr_syscall *syscall = NULL;
 
     if (!rr_queue_inited()) {
         return;
@@ -17,38 +18,42 @@ __visible noinstr void rr_record_syscall(struct pt_regs *regs)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry(sizeof(rr_syscall));
+    event = rr_alloc_new_event_entry(sizeof(rr_syscall), EVENT_TYPE_SYSCALL);
     if (event == NULL) {
-	panic("Failed to allocate entry");
+	    panic("Failed to allocate entry");
         //goto finish;
     }
 
-    event->type = EVENT_TYPE_SYSCALL;
-    event->event.syscall.regs.rax = regs->orig_ax;
-    event->event.syscall.regs.rbx = regs->bx;
-    event->event.syscall.regs.rcx = regs->cx;
-    event->event.syscall.regs.rdx = regs->dx;
-    event->event.syscall.regs.rsi = regs->si;
-    event->event.syscall.regs.rdi = regs->di;
-    event->event.syscall.regs.rsp = regs->sp;
-    event->event.syscall.regs.rbp = regs->bp;
-    event->event.syscall.regs.r8 = regs->r8;
-    event->event.syscall.regs.r9 = regs->r9;
-    event->event.syscall.regs.r10 = regs->r10;
-    event->event.syscall.regs.r11 = regs->r11;
-    event->event.syscall.regs.r12 = regs->r12;
-    event->event.syscall.regs.r13 = regs->r13;
-    event->event.syscall.regs.r14 = regs->r14;
-    event->event.syscall.regs.r15 = regs->r15;
-    event->event.syscall.cr3 = __read_cr3(); 
+    syscall = (rr_syscall *)event;
+
+    syscall->id = 0;
+    syscall->spin_count = 0;
+    syscall->regs.rax = regs->orig_ax;
+    syscall->regs.rbx = regs->bx;
+    syscall->regs.rcx = regs->cx;
+    syscall->regs.rdx = regs->dx;
+    syscall->regs.rsi = regs->si;
+    syscall->regs.rdi = regs->di;
+    syscall->regs.rsp = regs->sp;
+    syscall->regs.rbp = regs->bp;
+    syscall->regs.r8 = regs->r8;
+    syscall->regs.r9 = regs->r9;
+    syscall->regs.r10 = regs->r10;
+    syscall->regs.r11 = regs->r11;
+    syscall->regs.r12 = regs->r12;
+    syscall->regs.r13 = regs->r13;
+    syscall->regs.r14 = regs->r14;
+    syscall->regs.r15 = regs->r15;
+    syscall->cr3 = __read_cr3(); 
 
     local_irq_restore(flags);
 }
 
 void rr_record_exception(struct pt_regs *regs, int vector, int error_code, unsigned long cr2)
 {
-    rr_event_log_guest *event;
     unsigned long flags;
+    void *event;
+    rr_exception *exception = NULL;
 
     if (!rr_queue_inited()) {
         return;
@@ -60,40 +65,43 @@ void rr_record_exception(struct pt_regs *regs, int vector, int error_code, unsig
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry(sizeof(rr_exception));
+    event = rr_alloc_new_event_entry(sizeof(rr_exception), EVENT_TYPE_EXCEPTION);
     if (event == NULL) {
-	panic("Failed to allocate entry");
+	    panic("Failed to allocate entry");
         //goto finish;
     }
 
-    event->type = EVENT_TYPE_EXCEPTION;
-    event->event.exception.exception_index = vector;
-    event->event.exception.cr2 = cr2;
-    event->event.exception.error_code = error_code;
-    event->event.exception.regs.rax = regs->orig_ax;
-    event->event.exception.regs.rbx = regs->bx;
-    event->event.exception.regs.rcx = regs->cx;
-    event->event.exception.regs.rdx = regs->dx;
-    event->event.exception.regs.rsi = regs->si;
-    event->event.exception.regs.rdi = regs->di;
-    event->event.exception.regs.rsp = regs->sp;
-    event->event.exception.regs.rbp = regs->bp;
-    event->event.exception.regs.r8 = regs->r8;
-    event->event.exception.regs.r9 = regs->r9;
-    event->event.exception.regs.r10 = regs->r10;
-    event->event.exception.regs.r11 = regs->r11;
-    event->event.exception.regs.r12 = regs->r12;
-    event->event.exception.regs.r13 = regs->r13;
-    event->event.exception.regs.r14 = regs->r14;
-    event->event.exception.regs.r15 = regs->r15;
+    exception = (rr_exception *)event;
 
-    local_irq_restore(flags);
+    exception->id = 0;
+    exception->spin_count = 0;
+    exception->exception_index = vector;
+    exception->cr2 = cr2;
+    exception->error_code = error_code;
+    exception->regs.rax = regs->orig_ax;
+    exception->regs.rbx = regs->bx;
+    exception->regs.rcx = regs->cx;
+    exception->regs.rdx = regs->dx;
+    exception->regs.rsi = regs->si;
+    exception->regs.rdi = regs->di;
+    exception->regs.rsp = regs->sp;
+    exception->regs.rbp = regs->bp;
+    exception->regs.r8 = regs->r8;
+    exception->regs.r9 = regs->r9;
+    exception->regs.r10 = regs->r10;
+    exception->regs.r11 = regs->r11;
+    exception->regs.r12 = regs->r12;
+    exception->regs.r13 = regs->r13;
+    exception->regs.r14 = regs->r14;
+    exception->regs.r15 = regs->r15;
 }
+
 
 void rr_record_random(void *buf, int len)
 {
     unsigned long flags;
-    rr_event_log_guest *event;
+    void *event;
+    rr_random *random;
 
     if (!rr_queue_inited()) {
         return;
@@ -105,15 +113,17 @@ void rr_record_random(void *buf, int len)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry(sizeof(rr_random));
+    event = rr_alloc_new_event_entry(sizeof(rr_random), EVENT_TYPE_RANDOM);
     if (event == NULL) {
 	panic("Failed to allocate entry");
     }
 
-    event->type = EVENT_TYPE_RANDOM;
-    event->event.rand.len = len;
-    event->event.rand.buf = (unsigned long)buf;
-    memcpy(event->event.rand.data, buf, len);
+    random = (rr_random *)event;
+
+    random->id = 0;
+    random->len = len;
+    random->buf = (unsigned long)buf;
+    memcpy(random->data, buf, len);
 
     local_irq_restore(flags);
 }
@@ -122,7 +132,8 @@ void *rr_record_cfu(const void __user *from, void *to, long unsigned int n)
 {
     unsigned long flags;
     long ret;
-    rr_event_log_guest *event;
+    void *event;
+    rr_cfu *cfu;
 
     if (!rr_queue_inited()) {
         return NULL;
@@ -138,26 +149,29 @@ void *rr_record_cfu(const void __user *from, void *to, long unsigned int n)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry(sizeof(rr_cfu));
+    event = rr_alloc_new_event_entry(sizeof(rr_cfu), EVENT_TYPE_CFU);
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
 
-    event->type = EVENT_TYPE_CFU;
-    event->event.cfu.src_addr = (unsigned long)from;
-    event->event.cfu.dest_addr = (unsigned long)to;
-    event->event.cfu.len = n;
-    ret = raw_copy_from_user(event->event.cfu.data, from, n);
+    cfu = (rr_cfu *)event;
+
+    cfu->id = 0;
+    cfu->src_addr = (unsigned long)from;
+    cfu->dest_addr = (unsigned long)to;
+    cfu->len = n;
+    ret = raw_copy_from_user(cfu->data, from, n);
 
     local_irq_restore(flags);
 
-    return (void *)event->event.cfu.data;
+    return (void *)cfu->data;
 }
 
 void rr_record_gfu(unsigned long val)
 {
     unsigned long flags;
-    rr_event_log_guest *event;
+    void *event;
+    rr_gfu *gfu;
 
     if (!rr_queue_inited()) {
         return;
@@ -169,13 +183,15 @@ void rr_record_gfu(unsigned long val)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry(sizeof(rr_gfu));
+    event = rr_alloc_new_event_entry(sizeof(rr_gfu), EVENT_TYPE_GFU);
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
 
-    event->type = EVENT_TYPE_GFU;
-    event->event.gfu.val = val;
+    gfu = (rr_gfu *)event;
+
+    gfu->id = 0;
+    gfu->val = val;
 
     local_irq_restore(flags);
 }
@@ -184,7 +200,8 @@ void rr_record_gfu(unsigned long val)
 void rr_record_strnlen_user(unsigned long val)
 {
     unsigned long flags;
-    rr_event_log_guest *event;
+    void *event;
+    rr_cfu *cfu = NULL;
 
     if (!rr_queue_inited()) {
         return;
@@ -196,13 +213,14 @@ void rr_record_strnlen_user(unsigned long val)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry(sizeof(unsigned long));
+    event = rr_alloc_new_event_entry(sizeof(rr_cfu), EVENT_TYPE_STRNLEN);
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
+    cfu = (rr_cfu *)event;
 
-    event->type = EVENT_TYPE_STRNLEN;
-    event->event.cfu.len = val;
+    cfu->id = 0;
+    cfu->len = val;
 
     local_irq_restore(flags);
 }
@@ -210,7 +228,8 @@ void rr_record_strnlen_user(unsigned long val)
 void rr_record_strncpy_user(const void __user *from, void *to, long unsigned int n)
 {
     unsigned long flags;
-    rr_event_log_guest *event;
+    void *event;
+    rr_cfu *cfu = NULL;
 
     if (!rr_queue_inited()) {
         return;
@@ -222,16 +241,20 @@ void rr_record_strncpy_user(const void __user *from, void *to, long unsigned int
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry(sizeof(rr_cfu));
+    event = rr_alloc_new_event_entry(sizeof(rr_cfu), EVENT_TYPE_CFU);
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
 
-    event->type = EVENT_TYPE_CFU;
-    event->event.cfu.src_addr = (unsigned long)from;
-    event->event.cfu.dest_addr = (unsigned long)to;
-    event->event.cfu.len = n;
-    memcpy(event->event.cfu.data, to, n);
+    cfu = (rr_cfu *)event;
+
+    cfu->len = n;
+
+    cfu->id = 0;
+    cfu->src_addr = (unsigned long)from;
+    cfu->dest_addr = (unsigned long)to;
+    cfu->len = n;
+    memcpy(cfu->data, to, n);
 
     local_irq_restore(flags);
 }
@@ -239,7 +262,8 @@ void rr_record_strncpy_user(const void __user *from, void *to, long unsigned int
 void rr_record_rdseed(unsigned long val)
 {
     unsigned long flags;
-    rr_event_log_guest *event;
+    void *event;
+    rr_gfu *gfu = NULL;
 
     if (!rr_queue_inited()) {
         return;
@@ -251,13 +275,15 @@ void rr_record_rdseed(unsigned long val)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry(sizeof(rr_gfu));
+    event = rr_alloc_new_event_entry(sizeof(rr_gfu), EVENT_TYPE_RDSEED);
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
 
-    event->type = EVENT_TYPE_RDSEED;
-    event->event.gfu.val = val;
+    gfu = (rr_gfu *)event;
+
+    gfu->id = 0;
+    gfu->val = val;
 
     local_irq_restore(flags);
 }
