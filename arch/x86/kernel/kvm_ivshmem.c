@@ -454,7 +454,7 @@ rr_event_log_guest *rr_alloc_new_event_entry(void)
 
     if (header->current_pos == header->total_pos - 1) {
         printk(KERN_ERR "RR queue is full\n");
-        return NULL;
+		header->current_pos = 0;
     }
 
     entry = (rr_event_log_guest *)(kvm_ivshmem_dev.base_addr + \
