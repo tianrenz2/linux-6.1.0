@@ -63,6 +63,7 @@ __copy_from_user_inatomic(void *to, const void __user *from, unsigned long n)
 
 	instrument_copy_from_user_before(to, from, n);
 	check_object_size(to, n, false);
+	rr_record_cfu(from, to, n);
 	res = raw_copy_from_user(to, from, n);
 	instrument_copy_from_user_after(to, from, n, res);
 	return res;
@@ -78,6 +79,7 @@ __copy_from_user(void *to, const void __user *from, unsigned long n)
 	if (should_fail_usercopy())
 		return n;
 	check_object_size(to, n, false);
+	rr_record_cfu(from, to, n);
 	res = raw_copy_from_user(to, from, n);
 	instrument_copy_from_user_after(to, from, n, res);
 	return res;
@@ -125,6 +127,7 @@ _copy_from_user(void *to, const void __user *from, unsigned long n)
 	might_fault();
 	if (!should_fail_usercopy() && likely(access_ok(from, n))) {
 		instrument_copy_from_user_before(to, from, n);
+		rr_record_cfu(from, to, n);
 		res = raw_copy_from_user(to, from, n);
 		instrument_copy_from_user_after(to, from, n, res);
 	}
