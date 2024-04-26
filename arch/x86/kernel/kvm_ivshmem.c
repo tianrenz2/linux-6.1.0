@@ -452,9 +452,9 @@ rr_event_log_guest *rr_alloc_new_event_entry(void)
 
     header = (rr_event_guest_queue_header *)kvm_ivshmem_dev.base_addr;
 
-    if (header->current_pos == header->total_pos - 1) {
-        printk(KERN_ERR "RR queue is full\n");
-	header->current_pos = 0;
+    if (header->current_pos >= header->total_pos - 1) {
+        printk(KERN_ERR "RR queue is full, drop from start\n");
+		header->current_pos = 0;
     }
 
     entry = (rr_event_log_guest *)(kvm_ivshmem_dev.base_addr + \
