@@ -778,12 +778,19 @@ struct sigset_argpack {
 static inline int get_sigset_argpack(struct sigset_argpack *to,
 				     struct sigset_argpack __user *from)
 {
+	struct sigset_argpack *rr_from = NULL;
+
 	// the path is hot enough for overhead of copy_from_user() to matter
 	if (from) {
-		if (!user_read_access_begin_rr(from, sizeof(*from)))
+		if (!user_read_access_begin_rr(from, sizeof(*from), &rr_from))
 			return -EFAULT;
-		unsafe_get_user(to->p, &from->p, Efault);
-		unsafe_get_user(to->size, &from->size, Efault);
+		if (rr_from != NULL) {
+			unsafe_get_user(to->p, &rr_from->p, Efault);
+			unsafe_get_user(to->size, &rr_from->size, Efault);
+		} else {
+			unsafe_get_user(to->p, &from->p, Efault);
+			unsafe_get_user(to->size, &from->size, Efault);
+		}
 		user_read_access_end();
 	}
 	return 0;
@@ -1352,11 +1359,18 @@ struct compat_sigset_argpack {
 static inline int get_compat_sigset_argpack(struct compat_sigset_argpack *to,
 					    struct compat_sigset_argpack __user *from)
 {
+	struct compat_sigset_argpack *rr_from = NULL;
+
 	if (from) {
-		if (!user_read_access_begin_rr(from, sizeof(*from)))
+		if (!user_read_access_begin_rr(from, sizeof(*from), &rr_from))
 			return -EFAULT;
-		unsafe_get_user(to->p, &from->p, Efault);
-		unsafe_get_user(to->size, &from->size, Efault);
+		if (rr_from != NULL) {
+			unsafe_get_user(to->p, &rr_from->p, Efault);
+			unsafe_get_user(to->size, &rr_from->size, Efault);
+		} else {
+			unsafe_get_user(to->p, &from->p, Efault);
+			unsafe_get_user(to->size, &from->size, Efault);
+		}
 		user_read_access_end();
 	}
 	return 0;

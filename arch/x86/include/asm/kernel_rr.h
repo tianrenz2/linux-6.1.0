@@ -81,7 +81,7 @@ typedef struct rr_event_guest_queue_header_t {
 rr_event_log_guest *rr_alloc_new_event_entry(void);
 bool rr_queue_inited(void);
 int rr_enabled(void);
-void rr_record_cfu(const void __user *from, void *to, long unsigned int n);
+void *rr_record_cfu(const void __user *from, void *to, long unsigned int n);
 void rr_record_gfu(unsigned long val);
 void rr_record_random(void *buf, int len);
 void rr_record_strnlen_user(unsigned long val);

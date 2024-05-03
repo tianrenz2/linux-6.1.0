@@ -60,11 +60,16 @@ static __always_inline __must_check unsigned long
 __copy_from_user_inatomic(void *to, const void __user *from, unsigned long n)
 {
 	unsigned long res;
+	void *rr_from = NULL;
 
 	instrument_copy_from_user_before(to, from, n);
 	check_object_size(to, n, false);
-	rr_record_cfu(from, to, n);
-	res = raw_copy_from_user(to, from, n);
+	rr_from = rr_record_cfu(from, to, n);
+	if (rr_from != NULL)
+		res = raw_copy_from_user(to, rr_from, n);
+	else
+		res = raw_copy_from_user(to, from, n);
+
 	instrument_copy_from_user_after(to, from, n, res);
 	return res;
 }
@@ -73,14 +78,20 @@ static __always_inline __must_check unsigned long
 __copy_from_user(void *to, const void __user *from, unsigned long n)
 {
 	unsigned long res;
+	void *rr_from = NULL;
 
 	might_fault();
 	instrument_copy_from_user_before(to, from, n);
 	if (should_fail_usercopy())
 		return n;
 	check_object_size(to, n, false);
-	rr_record_cfu(from, to, n);
-	res = raw_copy_from_user(to, from, n);
+
+	rr_from = rr_record_cfu(from, to, n);
+	if (rr_from != NULL)
+		res = raw_copy_from_user(to, rr_from, n);
+	else
+		res = raw_copy_from_user(to, from, n);
+
 	instrument_copy_from_user_after(to, from, n, res);
 	return res;
 }
@@ -124,11 +135,16 @@ static inline __must_check unsigned long
 _copy_from_user(void *to, const void __user *from, unsigned long n)
 {
 	unsigned long res = n;
+	void *rr_from = NULL;
 	might_fault();
 	if (!should_fail_usercopy() && likely(access_ok(from, n))) {
 		instrument_copy_from_user_before(to, from, n);
-		rr_record_cfu(from, to, n);
-		res = raw_copy_from_user(to, from, n);
+		rr_from = rr_record_cfu(from, to, n);
+		if (rr_from != NULL)
+			res = raw_copy_from_user(to, rr_from, n);
+		else
+			res = raw_copy_from_user(to, from, n);
+
 		instrument_copy_from_user_after(to, from, n, res);
 	}
 	if (unlikely(res))
@@ -413,8 +429,8 @@ static inline void user_access_restore(unsigned long flags) { }
 #define user_read_access_begin user_access_begin
 #define user_read_access_end user_access_end
 
-#define user_read_access_begin_rr(from, len) ({ \
-rr_record_cfu(from, 0, len); \
+#define user_read_access_begin_rr(from, len, rr_from) ({ \
+*rr_from = rr_record_cfu(from, 0, len); \
 user_access_begin(from, len);\
 })
 #endif
