@@ -445,7 +445,7 @@ rr_event_log_guest* rr_get_tail_event(void)
     return event;    
 }
 
-rr_event_log_guest *rr_alloc_new_event_entry(void)
+rr_event_log_guest *rr_alloc_new_event_entry(unsigned long size)
 {
     rr_event_guest_queue_header *header;
     rr_event_log_guest *entry;
@@ -462,6 +462,8 @@ rr_event_log_guest *rr_alloc_new_event_entry(void)
     entry->id = header->current_pos;
 
     header->current_pos++;
+
+	header->total_event_cnt += size;
 
     return entry;
 }
@@ -496,6 +498,7 @@ static void rr_init_queue(void)
         .header_size = PAGE_SIZE,
         .entry_size = 2 * PAGE_SIZE,
         .rr_enabled = 0,
+		.total_event_cnt = 0,
     };
     rr_event_log_guest *event;
 	int i;
@@ -516,8 +519,10 @@ static void rr_init_queue(void)
 
 	// Warmup to touch shared memory
 	for (i=0; i < header.total_pos; i++) {
-		rr_alloc_new_event_entry();
+		rr_alloc_new_event_entry(0);
 	}
+
+	header.total_event_cnt = 0;
 
 	memcpy(kvm_ivshmem_dev.base_addr, &header, sizeof(rr_event_guest_queue_header));
 

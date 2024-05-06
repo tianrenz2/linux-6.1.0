@@ -76,9 +76,10 @@ typedef struct rr_event_guest_queue_header_t {
     unsigned int header_size;
     unsigned int entry_size;
     unsigned int rr_enabled;
+    unsigned long total_event_cnt;
 } rr_event_guest_queue_header;
 
-rr_event_log_guest *rr_alloc_new_event_entry(void);
+rr_event_log_guest *rr_alloc_new_event_entry(unsigned long size);
 bool rr_queue_inited(void);
 int rr_enabled(void);
 void *rr_record_cfu(const void __user *from, void *to, long unsigned int n);

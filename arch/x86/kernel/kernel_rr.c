@@ -17,7 +17,7 @@ __visible noinstr void rr_record_syscall(struct pt_regs *regs)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry();
+    event = rr_alloc_new_event_entry(sizeof(rr_syscall));
     if (event == NULL) {
 	panic("Failed to allocate entry");
         //goto finish;
@@ -60,7 +60,7 @@ void rr_record_exception(struct pt_regs *regs, int vector, int error_code, unsig
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry();
+    event = rr_alloc_new_event_entry(sizeof(rr_exception));
     if (event == NULL) {
 	panic("Failed to allocate entry");
         //goto finish;
@@ -105,7 +105,7 @@ void rr_record_random(void *buf, int len)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry();
+    event = rr_alloc_new_event_entry(sizeof(rr_random));
     if (event == NULL) {
 	panic("Failed to allocate entry");
     }
@@ -138,7 +138,7 @@ void *rr_record_cfu(const void __user *from, void *to, long unsigned int n)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry();
+    event = rr_alloc_new_event_entry(sizeof(rr_cfu));
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
@@ -169,7 +169,7 @@ void rr_record_gfu(unsigned long val)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry();
+    event = rr_alloc_new_event_entry(sizeof(rr_gfu));
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
@@ -196,7 +196,7 @@ void rr_record_strnlen_user(unsigned long val)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry();
+    event = rr_alloc_new_event_entry(sizeof(unsigned long));
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
@@ -222,7 +222,7 @@ void rr_record_strncpy_user(const void __user *from, void *to, long unsigned int
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry();
+    event = rr_alloc_new_event_entry(sizeof(rr_cfu));
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
@@ -251,7 +251,7 @@ void rr_record_rdseed(unsigned long val)
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry();
+    event = rr_alloc_new_event_entry(sizeof(rr_gfu));
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
