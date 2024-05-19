@@ -456,9 +456,10 @@ void *rr_alloc_new_event_entry(unsigned long size, int type)
 
     header = (rr_event_guest_queue_header *)kvm_ivshmem_dev.base_addr;
 
-    if (header->current_byte + event_size > header->total_size) {
+    if (header->current_byte + event_size >= header->total_size) {
         printk(KERN_ERR "RR queue is full, start over\n");
         header->current_byte = header->header_size;
+		header->current_pos = 0;
     }
 
 	offset = (unsigned long)kvm_ivshmem_dev.base_addr + header->current_byte;
