@@ -145,6 +145,7 @@ void *rr_record_cfu(const void __user *from, void *to, long unsigned int n)
 
     if (n > CFU_BUFFER_SIZE) {
         BUG();
+        panic("Un expected cfu size %lu", n);
     }
 
     local_irq_save(flags);
