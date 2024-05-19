@@ -458,6 +458,7 @@ void *rr_alloc_new_event_entry(unsigned long size, int type)
 
     if (header->current_byte + event_size >= header->total_size) {
         printk(KERN_ERR "RR queue is full, start over\n");
+		header->rotated_bytes += header->current_byte;
         header->current_byte = header->header_size;
 		header->current_pos = 0;
     }
@@ -474,6 +475,20 @@ void *rr_alloc_new_event_entry(unsigned long size, int type)
 	header->current_byte += event_size;
 
     return entry;
+}
+
+static void rr_warmup_shared_memory(unsigned long total_size)
+{
+	unsigned long allocated_size = 0;
+	rr_event_guest_queue_header *header;
+
+	while (allocated_size < total_size) {
+		header = (rr_event_guest_queue_header *)(kvm_ivshmem_dev.base_addr + allocated_size);
+		header->total_size = total_size;
+		allocated_size += PAGE_SIZE;
+	}
+
+	printk(KERN_INFO "warmup memory %lu", allocated_size);
 }
 
 void rr_append_to_queue(rr_event_log_guest *event_log)
@@ -506,6 +521,7 @@ static void rr_init_queue(void)
         .header_size = PAGE_SIZE,
         .entry_size = 2 * PAGE_SIZE,
         .rr_enabled = 0,
+		.rotated_bytes = 0,
     };
     rr_event_log_guest *event;
 	unsigned long size;
@@ -525,9 +541,7 @@ static void rr_init_queue(void)
     memcpy(kvm_ivshmem_dev.base_addr, &header, sizeof(rr_event_guest_queue_header));
 
 	// Warmup to touch shared memory
-	while(rr_alloc_new_event_entry(header.entry_size, 0)!=NULL) {
-		break;
-	}
+	rr_warmup_shared_memory(header.total_size);
 
 	header.current_byte = header.header_size;
 
