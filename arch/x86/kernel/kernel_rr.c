@@ -134,6 +134,7 @@ void *rr_record_cfu(const void __user *from, void *to, long unsigned int n)
     long ret;
     void *event;
     rr_cfu *cfu;
+    void *addr;
 
     if (!rr_queue_inited()) {
         return NULL;
@@ -143,14 +144,11 @@ void *rr_record_cfu(const void __user *from, void *to, long unsigned int n)
         return NULL;
     }
 
-    if (n > CFU_BUFFER_SIZE) {
-        BUG();
-        panic("Un expected cfu size %lu", n);
-    }
-
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry(sizeof(rr_cfu), EVENT_TYPE_CFU);
+    /* We reserve one more byte here for the buffer so in the replay, the extra byte is filled with
+       zero, same as rr_record_strncpy_user */
+    event = rr_alloc_new_event_entry(sizeof(rr_cfu) + (n + 1) * sizeof(unsigned char), EVENT_TYPE_CFU);
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
@@ -160,12 +158,15 @@ void *rr_record_cfu(const void __user *from, void *to, long unsigned int n)
     cfu->id = 0;
     cfu->src_addr = (unsigned long)from;
     cfu->dest_addr = (unsigned long)to;
-    cfu->len = n;
-    ret = raw_copy_from_user(cfu->data, from, n);
+    cfu->len = n + 1;
+    cfu->data = NULL;
+
+    addr = (void *)((unsigned long)cfu + sizeof(rr_cfu));
+    ret = raw_copy_from_user(addr, from, n);
 
     local_irq_restore(flags);
 
-    return (void *)cfu->data;
+    return addr;
 }
 
 void rr_record_gfu(unsigned long val)
@@ -231,6 +232,8 @@ void rr_record_strncpy_user(const void __user *from, void *to, long unsigned int
     unsigned long flags;
     void *event;
     rr_cfu *cfu = NULL;
+    unsigned long len;
+    void *addr;
 
     if (!rr_queue_inited()) {
         return;
@@ -242,20 +245,22 @@ void rr_record_strncpy_user(const void __user *from, void *to, long unsigned int
 
     local_irq_save(flags);
 
-    event = rr_alloc_new_event_entry(sizeof(rr_cfu), EVENT_TYPE_CFU);
+    len = sizeof(rr_cfu) + (n + 1) * sizeof(unsigned char);
+    event = rr_alloc_new_event_entry(len, EVENT_TYPE_CFU);
     if (event == NULL) {
         panic("Failed to allocate entry");
     }
 
     cfu = (rr_cfu *)event;
 
-    cfu->len = n;
-
     cfu->id = 0;
     cfu->src_addr = (unsigned long)from;
     cfu->dest_addr = (unsigned long)to;
-    cfu->len = n;
-    memcpy(cfu->data, to, n);
+    cfu->len = n + 1;
+    cfu->data = NULL;
+    addr = (void *)((unsigned long)cfu + sizeof(rr_cfu));
+
+    memcpy(addr, to, n);
 
     local_irq_restore(flags);
 }
