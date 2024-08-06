@@ -78,7 +78,7 @@ void rr_record_exception(struct pt_regs *regs, int vector, int error_code, unsig
     exception->exception_index = vector;
     exception->cr2 = cr2;
     exception->error_code = error_code;
-    exception->regs.rax = regs->orig_ax;
+    exception->regs.rax = regs->ax;
     exception->regs.rbx = regs->bx;
     exception->regs.rcx = regs->cx;
     exception->regs.rdx = regs->dx;
@@ -94,6 +94,8 @@ void rr_record_exception(struct pt_regs *regs, int vector, int error_code, unsig
     exception->regs.r13 = regs->r13;
     exception->regs.r14 = regs->r14;
     exception->regs.r15 = regs->r15;
+    exception->regs.rflags = regs->flags;
+    exception->regs.rip = regs->ip;
 }
 
 
