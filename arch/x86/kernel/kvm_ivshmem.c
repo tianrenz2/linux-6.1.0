@@ -417,17 +417,6 @@ static int kvm_ivshmem_mmap(struct file *filp, struct vm_area_struct * vma)
 	return 0;
 }
 
-static void test_mem(void)
-{
-	char data[5] = "12311";
-	char data2[5];
-
-	memcpy(kvm_ivshmem_dev.base_addr, data, 5);
-	memcpy(data2, kvm_ivshmem_dev.base_addr, 5);
-
-	printk(KERN_INFO "Data verified %s\n", data2);
-}
-
 rr_event_log_guest* rr_get_tail_event(void)
 {
     rr_event_log_guest *event;
@@ -577,7 +566,7 @@ int __init kvm_ivshmem_init(void)
 		goto error;
 	}
 
-    test_mem();
+    // test_mem();
 
     rr_init_queue();
 
