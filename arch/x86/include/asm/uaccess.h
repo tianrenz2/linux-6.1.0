@@ -106,7 +106,7 @@ extern int __get_user_bad(void);
 			ASM_CALL_CONSTRAINT				\
 		     : "0" (ptr), "i" (sizeof(*(ptr))));		\
 	instrument_get_user(__val_gu);					\
-	rr_record_gfu(__val_gu);						\
+	rr_record_gfu(__val_gu, (unsigned long)ptr);						\
 	(x) = (__force __typeof__(*(ptr))) __val_gu;			\
 	__builtin_expect(__ret_gu, 0);					\
 })
