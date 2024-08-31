@@ -96,6 +96,8 @@ void rr_record_exception(struct pt_regs *regs, int vector, int error_code, unsig
     exception->regs.r15 = regs->r15;
     exception->regs.rflags = regs->flags;
     exception->regs.rip = regs->ip;
+
+    local_irq_restore(flags);
 }
 
 
