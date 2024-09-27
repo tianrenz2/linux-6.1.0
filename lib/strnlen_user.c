@@ -111,7 +111,6 @@ long strnlen_user(const char __user *str, long count)
 
 		if (user_read_access_begin(str, max)) {
 			retval = do_strnlen_user(str, count, max);
-			rr_record_strnlen_user(retval, src_addr);
 			user_read_access_end();
 			return retval;
 		}

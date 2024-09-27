@@ -175,6 +175,105 @@ void *rr_record_cfu(const void __user *from, void *to, long unsigned int n)
     return addr;
 }
 
+void *rr_gfu_begin(unsigned long ptr)
+{
+    unsigned long flags;
+    void *event;
+    rr_gfu *gfu;
+
+    if (!rr_queue_inited()) {
+        return NULL;
+    }
+
+    if (!rr_enabled()) {
+        return NULL;
+    }
+
+    event = rr_alloc_new_event_entry(sizeof(rr_gfu), EVENT_TYPE_GFU);
+    if (event == NULL) {
+        panic("Failed to allocate entry");
+    }
+
+    gfu = (rr_gfu *)event;
+
+    gfu->id = 0;
+    gfu->ptr = ptr;
+
+    local_irq_restore(flags);
+
+    return event;
+}
+
+void *rr_cfu_begin(const void __user *from, void *to, long unsigned int n)
+{
+    unsigned long flags;
+    void *event;
+    rr_cfu *cfu = NULL;
+    unsigned long len;
+    void *addr;
+
+    if (!rr_queue_inited()) {
+        return NULL;
+    }
+
+    if (!rr_enabled()) {
+        return NULL;
+    }
+
+    local_irq_save(flags);
+
+    len = sizeof(rr_cfu) + (n + 1) * sizeof(unsigned char);
+    event = rr_alloc_new_event_entry(len, EVENT_TYPE_CFU);
+    if (event == NULL) {
+        panic("Failed to allocate entry");
+    }
+
+    cfu = (rr_cfu *)event;
+
+    cfu->id = 0;
+    cfu->src_addr = (unsigned long)from;
+    cfu->dest_addr = (unsigned long)to;
+    cfu->len = n + 1;
+    cfu->data = NULL;
+    addr = (void *)((unsigned long)cfu + sizeof(rr_cfu));
+
+    local_irq_restore(flags);
+
+    return addr;
+}
+
+void rr_cfu_end(void *addr, void *to, long unsigned int n)
+{
+    unsigned long flags;
+
+    if (!rr_queue_inited()) {
+        return;
+    }
+
+    if (!rr_enabled()) {
+        return;
+    }
+
+    if (!addr) {
+        return;
+    }
+
+    local_irq_save(flags);
+    memcpy(addr, to, n);
+    local_irq_restore(flags);
+}
+
+void rr_record_gfu_end(unsigned long val, void *event)
+{
+    rr_gfu *gfu;
+
+    if (!event)
+        return;
+
+    gfu = (rr_gfu *)event;
+    gfu->val = val;
+}
+
 void rr_record_gfu(unsigned long val, unsigned long ptr)
 {
     unsigned long flags;

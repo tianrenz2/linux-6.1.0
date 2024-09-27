@@ -11,6 +11,7 @@
 #include <asm/alternative.h>
 #include <asm/cpufeatures.h>
 #include <asm/page.h>
+#include <asm/kernel_rr.h>
 
 /*
  * Copy To/From Userspace
@@ -49,7 +50,14 @@ copy_user_generic(void *to, const void *from, unsigned len)
 static __always_inline __must_check unsigned long
 raw_copy_from_user(void *dst, const void __user *src, unsigned long size)
 {
-	return copy_user_generic(dst, (__force void *)src, size);
+	unsigned long ret;
+	void *addr;
+
+	addr = rr_cfu_begin(src, dst, size);
+	ret = copy_user_generic(dst, (__force void *)src, size);
+	rr_cfu_end(addr, dst, size - ret);
+
+	return ret;
 }
 
 static __always_inline __must_check unsigned long
