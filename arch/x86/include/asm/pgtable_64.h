@@ -15,6 +15,7 @@
 #include <linux/bitops.h>
 #include <linux/threads.h>
 #include <asm/fixmap.h>
+#include <asm/kernel_rr.h>
 
 extern p4d_t level4_kernel_pgt[512];
 extern p4d_t level4_ident_pgt[512];
@@ -91,7 +92,10 @@ static inline void native_pmd_clear(pmd_t *pmd)
 static inline pte_t native_ptep_get_and_clear(pte_t *xp)
 {
 #ifdef CONFIG_SMP
-	return native_make_pte(xchg(&xp->pte, 0));
+	void *event = rr_record_pte_begin((unsigned long)xp);
+	pteval_t p = xchg(&xp->pte, 0);
+	rr_record_pte_end(event, p);
+	return native_make_pte(p);
 #else
 	/* native_local_ptep_get_and_clear,
 	   but duplicated because of cyclic dependency */

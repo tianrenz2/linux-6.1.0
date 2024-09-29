@@ -86,6 +86,7 @@
 #include <linux/uaccess.h>
 #include <asm/tlb.h>
 #include <asm/tlbflush.h>
+#include <asm/kernel_rr.h>
 
 #include "pgalloc-track.h"
 #include "internal.h"
@@ -1422,8 +1423,9 @@ again:
 	flush_tlb_batched_pending(mm);
 	arch_enter_lazy_mmu_mode();
 	do {
-		pte_t ptent = *pte;
+		pte_t ptent;
 		struct page *page;
+		ptent = rr_read_pte(pte);
 
 		if (pte_none(ptent))
 			continue;
@@ -4930,7 +4932,7 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 		 * So now it's safe to run pte_offset_map().
 		 */
 		vmf->pte = pte_offset_map(vmf->pmd, vmf->address);
-		vmf->orig_pte = *vmf->pte;
+		vmf->orig_pte = rr_read_pte(vmf->pte);
 		vmf->flags |= FAULT_FLAG_ORIG_PTE_VALID;
 
 		/*

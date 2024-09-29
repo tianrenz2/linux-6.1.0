@@ -554,7 +554,7 @@ retry:
 		return no_page_table(vma, flags);
 
 	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
-	pte = *ptep;
+	pte = rr_read_pte(ptep);
 	if (!pte_present(pte)) {
 		swp_entry_t entry;
 		/*

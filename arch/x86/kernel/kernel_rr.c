@@ -1,3 +1,4 @@
+#include <asm/pgtable_64_types.h>
 #include <asm/kernel_rr.h>
 #include <asm/traps.h>
 #include <linux/ptrace.h>
@@ -188,6 +189,8 @@ void *rr_gfu_begin(unsigned long ptr)
     if (!rr_enabled()) {
         return NULL;
     }
+
+    local_irq_save(flags);
 
     event = rr_alloc_new_event_entry(sizeof(rr_gfu), EVENT_TYPE_GFU);
     if (event == NULL) {
@@ -403,3 +406,88 @@ void rr_record_rdseed(unsigned long val)
 
 void rr_begin_cfu(const void __user *from, void *to, long unsigned int n)
 { return; }
+
+void *rr_record_pte_begin(unsigned long ptr)
+{
+    unsigned long flags;
+    void *event;
+    rr_gfu *gfu = NULL;
+
+    if (!rr_queue_inited()) {
+        return NULL;
+    }
+
+    if (!rr_enabled()) {
+        return NULL;
+    }
+
+    local_irq_save(flags);
+
+    event = rr_alloc_new_event_entry(sizeof(rr_gfu), EVENT_TYPE_PTE);
+    if (event == NULL) {
+        panic("Failed to allocate entry");
+    }
+
+    gfu = (rr_gfu *)event;
+
+    gfu->id = 0;
+    gfu->ptr = ptr;
+
+    local_irq_restore(flags);
+
+    return (void *)gfu;
+}
+
+void inline rr_record_pte_end(void *event, unsigned long pte_val)
+{
+    rr_gfu *gfu;
+    if (event == NULL) {
+        return;
+    }
+
+    gfu = (rr_gfu *)event;
+    gfu->val = pte_val;
+}
+
+pte_t rr_read_pte(pte_t *pte)
+{
+    pte_t rr_pte;
+    unsigned long flags;
+    void *event;
+    rr_gfu *gfu;
+
+    rr_pte = *pte;
+
+    if (!rr_queue_inited()) {
+        return rr_pte;
+    }
+
+    if (!rr_enabled()) {
+        return rr_pte;
+    }
+
+    if (!(rr_pte.pte & _PAGE_USER)) {
+        return rr_pte;
+    }
+
+    if (!pte_dirty(rr_pte) && !(rr_pte.pte & _PAGE_ACCESSED)) {
+        return rr_pte;
+    }
+
+    local_irq_save(flags);
+
+    event = rr_alloc_new_event_entry(sizeof(rr_gfu), EVENT_TYPE_PTE);
+    if (event == NULL) {
+        panic("Failed to allocate entry");
+    }
+
+    gfu = (rr_gfu *)event;
+
+    gfu->id = 0;
+    gfu->ptr = (unsigned long)pte;
+    gfu->val = rr_pte.pte;
+
+    local_irq_restore(flags);
+
+    return rr_pte;
+}

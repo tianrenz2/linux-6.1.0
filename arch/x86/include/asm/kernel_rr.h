@@ -11,6 +11,7 @@
 #define EVENT_TYPE_GFU       8
 #define EVENT_TYPE_STRNLEN   9
 #define EVENT_TYPE_RDSEED    10
+#define EVENT_TYPE_PTE       14
 
 #define CFU_BUFFER_SIZE     4096
 
@@ -116,5 +117,8 @@ void *rr_gfu_begin(unsigned long ptr);
 void rr_record_gfu_end(unsigned long val, void *event);
 void *rr_cfu_begin(const void __user *from, void *to, long unsigned int n);
 void rr_cfu_end(void *addr, void *to, long unsigned int n);
+void *rr_record_pte_begin(unsigned long ptr);
+void inline rr_record_pte_end(void *event, unsigned long pte_val);
+pte_t rr_read_pte(pte_t *pte);
 
 #endif /* _ASM_X86_KERNEL_RR_H */
