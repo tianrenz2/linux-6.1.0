@@ -99,14 +99,16 @@ extern int __get_user_bad(void);
 #define do_get_user_call(fn,x,ptr)					\
 ({									\
 	int __ret_gu;							\
+	void *rr_event;	\
 	register __inttype(*(ptr)) __val_gu asm("%"_ASM_DX);		\
 	__chk_user_ptr(ptr);						\
+	rr_event = rr_gfu_begin((unsigned long)ptr, sizeof(*(ptr)), 1);	\
 	asm volatile("call __" #fn "_%P4"				\
 		     : "=a" (__ret_gu), "=r" (__val_gu),		\
 			ASM_CALL_CONSTRAINT				\
 		     : "0" (ptr), "i" (sizeof(*(ptr))));		\
 	instrument_get_user(__val_gu);					\
-	rr_record_gfu(__val_gu, (unsigned long)ptr);						\
+	rr_record_gfu_end(__val_gu, rr_event);	\
 	(x) = (__force __typeof__(*(ptr))) __val_gu;			\
 	__builtin_expect(__ret_gu, 0);					\
 })
@@ -569,7 +571,7 @@ static __must_check __always_inline bool user_access_begin(const void __user *pt
 #define unsafe_get_user(x, ptr, err_label)					\
 do {										\
 	__inttype(*(ptr)) __gu_val;						\
-	void *event = rr_gfu_begin((unsigned long)ptr);	\
+	void *event = rr_gfu_begin((unsigned long)ptr, sizeof(*(ptr)), 0);	\
 	__get_user_size(__gu_val, (ptr), sizeof(*(ptr)), err_label);		\
 	(x) = (__force __typeof__(*(ptr)))__gu_val;				\
 	rr_record_gfu_end(__gu_val, event);	\

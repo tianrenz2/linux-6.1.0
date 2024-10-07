@@ -36,6 +36,8 @@ typedef struct {
     int id;
     unsigned long val;
     unsigned long ptr;
+    int err;
+    int size;
 } rr_gfu;
 
 typedef struct {
@@ -113,12 +115,13 @@ void rr_record_strnlen_user(unsigned long val, unsigned long src);
 void rr_record_strncpy_user(const void __user *from, void *to, long unsigned int n);
 void rr_record_rdseed(unsigned long val);
 void rr_begin_cfu(const void __user *from, void *to, long unsigned int n);
-void *rr_gfu_begin(unsigned long ptr);
+void *rr_gfu_begin(unsigned long ptr, int size, int align);
 void rr_record_gfu_end(unsigned long val, void *event);
 void *rr_cfu_begin(const void __user *from, void *to, long unsigned int n);
 void rr_cfu_end(void *addr, void *to, long unsigned int n);
 void *rr_record_pte_begin(unsigned long ptr);
 void inline rr_record_pte_end(void *event, unsigned long pte_val);
+unsigned long rr_record_pte_clear(pte_t *xp);
 pte_t rr_read_pte(pte_t *pte);
 
 #endif /* _ASM_X86_KERNEL_RR_H */

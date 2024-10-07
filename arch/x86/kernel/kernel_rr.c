@@ -176,7 +176,7 @@ void *rr_record_cfu(const void __user *from, void *to, long unsigned int n)
     return addr;
 }
 
-void *rr_gfu_begin(unsigned long ptr)
+void *rr_gfu_begin(unsigned long ptr, int size, int align)
 {
     unsigned long flags;
     void *event;
@@ -201,6 +201,7 @@ void *rr_gfu_begin(unsigned long ptr)
 
     gfu->id = 0;
     gfu->ptr = ptr;
+    gfu->size = size;
 
     local_irq_restore(flags);
 
@@ -407,18 +408,24 @@ void rr_record_rdseed(unsigned long val)
 void rr_begin_cfu(const void __user *from, void *to, long unsigned int n)
 { return; }
 
-void *rr_record_pte_begin(unsigned long ptr)
+unsigned long rr_record_pte_clear(pte_t *xp)
 {
     unsigned long flags;
     void *event;
     rr_gfu *gfu = NULL;
 
+    pteval_t p = xchg(&xp->pte, 0);
+
     if (!rr_queue_inited()) {
-        return NULL;
+        return p;
     }
 
     if (!rr_enabled()) {
-        return NULL;
+        return p;
+    }
+
+    if (!(p & _PAGE_USER)) {
+        return p;
     }
 
     local_irq_save(flags);
@@ -431,22 +438,12 @@ void *rr_record_pte_begin(unsigned long ptr)
     gfu = (rr_gfu *)event;
 
     gfu->id = 0;
-    gfu->ptr = ptr;
+    gfu->ptr = (unsigned long)xp;
+    gfu->val = p;
 
     local_irq_restore(flags);
 
-    return (void *)gfu;
-}
-
-void inline rr_record_pte_end(void *event, unsigned long pte_val)
-{
-    rr_gfu *gfu;
-    if (event == NULL) {
-        return;
-    }
-
-    gfu = (rr_gfu *)event;
-    gfu->val = pte_val;
+    return p;
 }
 
 pte_t rr_read_pte(pte_t *pte)
@@ -470,9 +467,9 @@ pte_t rr_read_pte(pte_t *pte)
         return rr_pte;
     }
 
-    if (!pte_dirty(rr_pte) && !(rr_pte.pte & _PAGE_ACCESSED)) {
-        return rr_pte;
-    }
+    // if (!pte_dirty(rr_pte) && !(rr_pte.pte & _PAGE_ACCESSED)) {
+    //     return rr_pte;
+    // }
 
     local_irq_save(flags);
 
