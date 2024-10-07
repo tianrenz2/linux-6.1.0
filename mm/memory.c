@@ -946,7 +946,7 @@ copy_present_pte(struct vm_area_struct *dst_vma, struct vm_area_struct *src_vma,
 {
 	struct mm_struct *src_mm = src_vma->vm_mm;
 	unsigned long vm_flags = src_vma->vm_flags;
-	pte_t pte = *src_pte;
+	pte_t pte = rr_read_pte(src_pte);
 	struct page *page;
 
 	page = vm_normal_page(src_vma, addr, pte);
@@ -1029,6 +1029,7 @@ copy_pte_range(struct vm_area_struct *dst_vma, struct vm_area_struct *src_vma,
 	int rss[NR_MM_COUNTERS];
 	swp_entry_t entry = (swp_entry_t){0};
 	struct page *prealloc = NULL;
+	pte_t pte_val;
 
 again:
 	progress = 0;
@@ -1057,11 +1058,13 @@ again:
 			    spin_needbreak(src_ptl) || spin_needbreak(dst_ptl))
 				break;
 		}
-		if (pte_none(*src_pte)) {
+
+		pte_val = rr_read_pte(src_pte);
+		if (pte_none(pte_val)) {
 			progress++;
 			continue;
 		}
-		if (unlikely(!pte_present(*src_pte))) {
+		if (unlikely(!pte_present(pte_val))) {
 			ret = copy_nonpresent_pte(dst_mm, src_mm,
 						  dst_pte, src_pte,
 						  dst_vma, src_vma,

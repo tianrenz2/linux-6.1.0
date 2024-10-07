@@ -92,9 +92,7 @@ static inline void native_pmd_clear(pmd_t *pmd)
 static inline pte_t native_ptep_get_and_clear(pte_t *xp)
 {
 #ifdef CONFIG_SMP
-	void *event = rr_record_pte_begin((unsigned long)xp);
-	pteval_t p = xchg(&xp->pte, 0);
-	rr_record_pte_end(event, p);
+	pteval_t p = rr_record_pte_clear(xp);
 	return native_make_pte(p);
 #else
 	/* native_local_ptep_get_and_clear,
