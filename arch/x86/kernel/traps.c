@@ -731,6 +731,8 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
 	enum kernel_gp_hint hint = GP_NO_HINT;
 	unsigned long gp_addr;
 
+	rr_record_exception(regs, GP_VECTOR, error_code, 0);
+
 	if (user_mode(regs) && try_fixup_enqcmd_gp())
 		return;
 
