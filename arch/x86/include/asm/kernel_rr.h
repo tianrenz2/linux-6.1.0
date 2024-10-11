@@ -123,5 +123,6 @@ void *rr_record_pte_begin(unsigned long ptr);
 void inline rr_record_pte_end(void *event, unsigned long pte_val);
 unsigned long rr_record_pte_clear(pte_t *xp);
 pte_t rr_read_pte(pte_t *pte);
+pte_t rr_read_pte_once(pte_t *pte);
 
 #endif /* _ASM_X86_KERNEL_RR_H */

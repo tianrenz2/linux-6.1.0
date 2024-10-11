@@ -467,9 +467,44 @@ pte_t rr_read_pte(pte_t *pte)
         return rr_pte;
     }
 
-    // if (!pte_dirty(rr_pte) && !(rr_pte.pte & _PAGE_ACCESSED)) {
-    //     return rr_pte;
-    // }
+    local_irq_save(flags);
+
+    event = rr_alloc_new_event_entry(sizeof(rr_gfu), EVENT_TYPE_PTE);
+    if (event == NULL) {
+        panic("Failed to allocate entry");
+    }
+
+    gfu = (rr_gfu *)event;
+
+    gfu->id = 0;
+    gfu->ptr = (unsigned long)pte;
+    gfu->val = rr_pte.pte;
+
+    local_irq_restore(flags);
+
+    return rr_pte;
+}
+
+pte_t rr_read_pte_once(pte_t *pte)
+{
+    pte_t rr_pte;
+    unsigned long flags;
+    void *event;
+    rr_gfu *gfu;
+
+    rr_pte = READ_ONCE(*pte);
+
+    if (!rr_queue_inited()) {
+        return rr_pte;
+    }
+
+    if (!rr_enabled()) {
+        return rr_pte;
+    }
+
+    if (!(rr_pte.pte & _PAGE_USER)) {
+        return rr_pte;
+    }
 
     local_irq_save(flags);
 

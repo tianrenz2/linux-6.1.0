@@ -294,7 +294,7 @@ static inline void ptep_clear(struct mm_struct *mm, unsigned long addr,
 #ifndef __HAVE_ARCH_PTEP_GET
 static inline pte_t ptep_get(pte_t *ptep)
 {
-	return READ_ONCE(*ptep);
+	return rr_read_pte_once(ptep);
 }
 #endif
 
